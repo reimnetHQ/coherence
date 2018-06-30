@@ -64,6 +64,26 @@ defmodule Coherence.RegistrationController do
     end
   end
 
+
+  # @spec create(conn, params) :: conn
+  def api_create(conn, %{"registration" => registration_params} = params) do
+    user_schema = Config.user_schema
+    :registration
+    |> Controller.changeset(user_schema, user_schema.__struct__, registration_params)
+    |> Schemas.create
+    |> case do
+      {:ok, user} ->
+        conn
+        |> send_confirmation(user, user_schema)
+        {:ok, "Registration successful!"}
+
+        # |> redirect_or_login(user, params, Config.allow_unconfirmed_access_for)
+      {:error, changeset} ->
+        # respond_with(conn, :registration_create_error, %{changeset: changeset})
+        {:error, "Registration failed!"}
+    end
+  end
+
   defp redirect_or_login(conn, user, params, 0) do
     respond_with(conn, :registration_create_success, %{params: params, user: user})
   end
