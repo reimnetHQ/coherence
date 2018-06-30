@@ -74,7 +74,7 @@ defmodule Coherence.RegistrationController do
     |> case do
       {:ok, user} ->
         conn
-        |> send_confirmation(user, user_schema)
+        |> api_send_confirmation(user, user_schema)
         {:ok, "Registration successful!"}
 
         # |> redirect_or_login(user, params, Config.allow_unconfirmed_access_for)

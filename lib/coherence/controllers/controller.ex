@@ -188,6 +188,28 @@ defmodule Coherence.Controller do
     end
   end
 
+   def api_send_confirmation(conn, user, user_schema) do
+    if user_schema.confirmable? do
+      token = random_string 48
+      url = router_helpers().confirmation_url(conn, :edit, token)
+      Logger.debug "confirmation email url: #{inspect url}"
+      dt = NaiveDateTime.utc_now()
+      user
+      |> user_schema.changeset(%{confirmation_token: token,
+        confirmation_sent_at: dt,
+        current_password: user.password})
+      |> Config.repo.update!
+
+      info = Messages.backend().confirmation_email_sent()
+
+      conn
+      |> api_send_email_if_mailer(info, fn -> send_user_email :confirmation, user, url end)
+    else
+      conn
+      # |> put_flash(:info, Messages.backend().registration_created_successfully())
+    end
+  end
+
   #############
   # User Schema
 
@@ -346,6 +368,18 @@ defmodule Coherence.Controller do
       put_flash(conn, :info, info)
     else
       put_flash(conn, :error, Messages.backend().mailer_required())
+    end
+  end
+
+  def api_send_email_if_mailer(conn, info, send_function) do
+    if Config.mailer?() do
+      send_function.()
+      {:ok, info}
+      # put_flash(conn, :info, info)
+    else
+      {:error, Messages.backend().mailer_required() }
+
+      # put_flash(conn, :error, Messages.backend().mailer_required())
     end
   end
 end
